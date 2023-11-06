@@ -114,13 +114,13 @@ class XRayDatasetModule:
         logger.info(f"Test length: {len(test_dataset)}")
 
         train_loader = DataLoader(
-            train_dataset, batch_size=batch_size, shuffle=True, num_workers=0
+            train_dataset, batch_size=batch_size, shuffle=True, num_workers=self.config.data.num_workers
         )
         val_loader = DataLoader(
-            val_dataset, batch_size=batch_size, shuffle=True, num_workers=0
+            val_dataset, batch_size=batch_size, shuffle=True, num_workers=self.config.data.num_workers
         )
         test_loader = DataLoader(
-            test_dataset, batch_size=batch_size, shuffle=True, num_workers=0
+            test_dataset, batch_size=batch_size, shuffle=True, num_workers=self.config.data.num_workers
         )
 
         return train_loader, val_loader, test_loader

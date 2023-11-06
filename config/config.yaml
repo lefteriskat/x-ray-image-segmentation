@@ -3,6 +3,18 @@ data:
     train_size: 0.8
     test_size: 0.05
     val_size: 0.15
-    batch_size: 32
+    batch_size: 8
     resize_dims: 512
+    enable_transforms: False
+    num_workers: 8
     random_state: 2023
+model:
+    name: unet
+    unet_block : "cnn" # can be also "resnet"
+    unet_in_channels: 1
+    unet_out_channels: 1
+training:
+    optimizer: adam
+    lr : 0.001
+    epochs: 5
+    seed : 69
