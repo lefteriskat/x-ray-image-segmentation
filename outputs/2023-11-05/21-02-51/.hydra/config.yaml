@@ -1,0 +1,6 @@
+data:
+  data_path: data/raw/training_dataset/
+  train_size: 0.8
+  test_size: 0.05
+  val_size: 0.15
+  random_state: 2023
