@@ -5,4 +5,15 @@ data:
     val_size: 0.15
     batch_size: 32
     resize_dims: 512
+    enable_transforms: False
     random_state: 2023
+model:
+    name: unet
+    unet_block : "cnn" # can be also "resnet"
+    unet_in_channels: 1
+    unet_out_channels: 1
+training:
+    optimizer: adam
+    lr : 0.001
+    epochs: 5
+    seed : 69
