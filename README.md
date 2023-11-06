@@ -1,5 +1,12 @@
 x-ray-image-segmentation
 ==============================
+# Schedule for project meetings 
+You can find the schedule for the next project meetings in this link:
+https://docs.google.com/spreadsheets/d/1v-03Ygty5hSrs0qHAoLqmFP2TPtzqfeiryi3oHyiVYE/edit?usp=sharing
+
+Please fill in when you wish to meet and try to coordinate for not being too many in a single time slot. Since many of you don’t know their group number, it is enough to write the student number of one member. The schedule will start from next Monday. 
+
+All meetings that were previously scheduled in other time slots will still take place
 
 # Automating the Segmentation of X-ray Images with Deep Neural Networks
 
