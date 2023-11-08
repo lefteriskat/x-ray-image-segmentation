@@ -2,12 +2,13 @@
 import logging
 from pathlib import Path
 
+import albumentations as A
 import click
-from dotenv import find_dotenv, load_dotenv
-from x_ray_dataset import XRayDatasetModule
-
-from omegaconf import DictConfig, OmegaConf
 import hydra
+from albumentations.pytorch import ToTensorV2
+from dotenv import find_dotenv, load_dotenv
+from omegaconf import DictConfig, OmegaConf
+from x_ray_dataset import XRayDatasetModule
 
 
 @hydra.main(version_base=None, config_path="../../config", config_name="config")
@@ -22,8 +23,17 @@ def main(cfg: DictConfig):
     # # Test dataloader : 001,002..500
     # logger.info(dataset.__len__())
     # dataset.__getitemtest__(1)
-    data_module = XRayDatasetModule(cfg)
-    data_module.getDataLoaders()
+    tr = A.Compose(
+        [
+            A.ToFloat(),
+            A.Resize(width=cfg.data.resize_dims, height=cfg.data.resize_dims),
+            ToTensorV2(),
+        ]
+    )
+    data_module = XRayDatasetModule(cfg, tr, tr, tr)
+    t, _, _ = data_module.getDataLoaders()
+    for images_batch, masks_batch in t:
+        break
 
 
 if __name__ == "__main__":

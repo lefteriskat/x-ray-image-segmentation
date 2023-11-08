@@ -4,15 +4,15 @@ data:
     test_size: 0.05
     val_size: 0.15
     batch_size: 8
-    resize_dims: 512
+    resize_dims: 64
     enable_transforms: False
-    num_workers: 8
+    num_workers: 0
     random_state: 2023
 model:
     name: unet
     unet_block : "cnn" # can be also "resnet"
-    unet_in_channels: 1
-    unet_out_channels: 1
+    in_channels: 1
+    out_channels: 3
 training:
     optimizer: adam
     lr : 0.001
