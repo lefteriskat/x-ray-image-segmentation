@@ -55,8 +55,12 @@ def train_model(config: DictConfig):
 
     # Training loop
     for epoch in tqdm(range(epochs), desc="Epoch"):
-        train_avg_loss = 0
-        train_accuracy = 0
+        train_avg_loss = 0.0
+        train_accuracy = 0.0
+        train__specificity = 0.0
+        train__iou = 0.0
+        train_dice = 0.0
+        
         model.train()  # train mode
         tp, tn, fp, fn = [0] * 4
         for images_batch, masks_batch in tqdm(
@@ -76,35 +80,28 @@ def train_model(config: DictConfig):
 
             # calculate metrics to show the user
             train_avg_loss += loss.item() / len(train_loader)
-            train_accuracy += Metrics.prediction_accuracy(masks_batch, pred) / len(
-                train_loader
-            )
-            train_accuracy2 = Metrics2.get_accuracy(pred, masks_batch)
-
-            tp_, tn_, fp_, fn_ = Metrics.get_tp_tn_fp_fn(masks_batch, pred)
-
-            tp += tp_
-            fp += fp_
-            tn += tn_
-            fn += fn_
-
-        test_sens, test_spec = Metrics.get_sensitivity_specificity(tp, tn, fp, fn)
-        test_dice = Metrics.get_dice_coe(masks_batch, pred)
-        test_iou = Metrics.get_IoU(tp, fp, fn)
+            
+            train_accuracy += Metrics2.get_accuracy(pred, masks_batch) / len(train_loader)
+            train__specificity += Metrics2.get_specificity(pred, masks_batch) / len(train_loader)
+            train__iou += Metrics2.get_iou(pred, masks_batch) / len(train_loader)
+            train_dice += Metrics2.get_dice_coef(pred, masks_batch) / len(train_loader)
 
         logger.info(
             f" - Training loss: {train_avg_loss}  - Training accuracy: {train_accuracy}"
         )
-        logger.info(
-            f" - Training loss: {train_avg_loss}  - Training accuracy: {train_accuracy2}"
-        )
-        # logger.info(f" - Train sensitivity: {test_sens}  - Train specificity: {test_spec}")
-        # logger.info(f" - Train DICE: {test_dice}  - Train IoU: {test_iou}")
+        logger.info(f" - Train specificity: {train__specificity}")
+        logger.info(f" - Train DICE: {train_dice}  - Train IoU: {train__iou}")
+        
+        ################################################################
+        # Validation
+        ################################################################
 
         # Compute the evaluation set loss
-        validation_avg_loss = 0
-        validation_accuracy = 0
-        tp, tn, fp, fn = [0] * 4
+        validation_avg_loss = 0.0
+        val_accuracy = 0.0
+        val_specificity = 0.0
+        val_iou = 0.0
+        val_dice = 0.0
 
         model.eval()
 
@@ -119,58 +116,49 @@ def train_model(config: DictConfig):
             loss = loss_func(val_pred, masks_batch)
 
             validation_avg_loss += loss / len(val_loader)
-            validation_accuracy += Metrics.prediction_accuracy(
-                masks_batch, val_pred
-            ) / len(val_loader)
 
-            tp_, tn_, fp_, fn_ = Metrics.get_tp_tn_fp_fn(masks_batch, val_pred)
-
-            tp += tp_
-            fp += fp_
-            tn += tn_
-            fn += fn_
-
-        test_sens, test_spec = Metrics.get_sensitivity_specificity(tp, tn, fp, fn)
-        test_dice = Metrics.get_dice_coe(masks_batch, val_pred)
-        test_iou = Metrics.get_IoU(tp, fp, fn)
+            val_accuracy += Metrics2.get_accuracy(val_pred, masks_batch) / len(val_loader)
+            val_specificity += Metrics2.get_specificity(val_pred, masks_batch) / len(val_loader)
+            val_iou += Metrics2.get_iou(val_pred, masks_batch) / len(val_loader)
+            val_dice += Metrics2.get_dice_coef(val_pred, masks_batch) / len(val_loader)
 
         logger.info(
-            f" - Validation loss: {validation_avg_loss}  - Validation accuracy: {validation_accuracy}"
+            f" - Validation loss: {validation_avg_loss}  - Validation accuracy: {val_accuracy}"
         )
-        # logger.info(f" - Validation sensitivity: {test_sens}  - Validation specificity: {test_spec}")
-        # logger.info(f" - Validation DICE: {test_dice}  - Validation IoU: {test_iou}")
+        logger.info(f" - Validation specificity: {val_specificity}")
+        logger.info(f" - Validation DICE: {val_dice}  - Validation IoU: {val_iou}")
 
         # Adjust lr
         # scheduler.step()
+        
+        
+    ################################################################
+    # Test
+    ################################################################
 
     # Test results and plot
-    test_avg_loss = 0
-    test_accuracy = 0
-    tp, tn, fp, fn = [0] * 4
+    test_avg_loss = 0.0
+    test_accuracy = 0.0
+    test_specificity = 0.0
+    test_iou = 0.0
+    test_dice = 0.0
+    
     for images_batch, masks_batch in tqdm(test_loader, desc="Test"):
         images_batch, masks_batch = images_batch.to(device), masks_batch.to(device)
         with torch.no_grad():
             pred_test = model(images_batch)
 
         test_avg_loss += loss_func(pred_test, masks_batch) / len(test_loader)
-        test_accuracy += Metrics.prediction_accuracy(masks_batch, pred_test) / len(
-            test_loader
-        )
 
-        tp_, tn_, fp_, fn_ = Metrics.get_tp_tn_fp_fn(masks_batch, pred_test)
+        test_accuracy += Metrics2.get_accuracy(pred_test, masks_batch) / len(test_loader)
+        test_specificity += Metrics2.get_specificity(pred_test, masks_batch) / len(test_loader)
+        test_iou += Metrics2.get_iou(pred_test, masks_batch) / len(test_loader)
+        test_dice += Metrics2.get_dice_coef(pred_test, masks_batch) / len(test_loader)
 
-        tp += tp_
-        fp += fp_
-        tn += tn_
-        fn += fn_
-
-    test_sens, test_spec = Metrics.get_sensitivity_specificity(tp, tn, fp, fn)
-    test_dice = Metrics.get_dice_coe(masks_batch, pred_test)
-    test_iou = Metrics.get_IoU(tp, fp, fn)
 
     logger.info(f" - Test loss: {test_avg_loss}  - Test accuracy: {test_accuracy}")
-    # logger.info(f" - Test sensitivity: {test_sens}  - Test specificity: {test_spec}")
-    # logger.info(f" - Test DICE: {test_dice}  - Test IoU: {test_iou}")
+    logger.info(f" - Test specificity: {test_specificity}")
+    logger.info(f" - Test DICE: {test_dice}  - Test IoU: {test_iou}")
 
     # utils.plot_predictions(images_batch, masks_batch, pred)
 

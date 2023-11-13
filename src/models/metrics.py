@@ -1,7 +1,7 @@
 import logging
 
 import torch
-from torchmetrics.functional.classification import multiclass_accuracy
+from torchmetrics.functional.classification import multiclass_accuracy, multiclass_specificity, multiclass_f1_score, multiclass_jaccard_index
 
 logger = logging.getLogger(__name__)
 
@@ -10,6 +10,27 @@ class Metrics2:
     @staticmethod
     def get_accuracy(y_pred, mask):
         return multiclass_accuracy(y_pred, mask, num_classes=3)
+    
+    @staticmethod
+    def get_specificity(y_pred, mask):
+        return multiclass_specificity(y_pred, mask, num_classes=3)
+    
+    @staticmethod
+    def get_iou(y_pred, mask):  #iou
+        return multiclass_jaccard_index(y_pred, mask, num_classes=3)
+    
+    @staticmethod
+    def get_dice_coef(y_pred, mask):
+        return multiclass_f1_score(y_pred, mask, num_classes=3)
+    
+    @staticmethod
+    def get_all_metrics(y_pred, mask):
+        return {"accuracy": multiclass_accuracy(y_pred, mask, num_classes=3),
+                "specificity": multiclass_specificity(y_pred, mask, num_classes=3), 
+                "iou": multiclass_jaccard_index(y_pred, mask, num_classes=3),
+                "dice": multiclass_f1_score(y_pred, mask, num_classes=3)}
+        
+    
 
 
 class Metrics:
