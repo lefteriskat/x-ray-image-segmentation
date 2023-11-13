@@ -5,7 +5,7 @@ from albumentations.pytorch import ToTensorV2
 from omegaconf import DictConfig, OmegaConf
 from torch import nn
 
-from src.models.unet import UNetBlocked
+from src.models.unet import UNetBlocked, DeepLabv3
 
 
 class Utils:
@@ -84,6 +84,8 @@ class Utils:
                 out_channels=self.config.model.out_channels,
                 unet_block=self.config.model.unet_block,
             )
+        elif self.config.model.name == "deeplab":
+            return DeepLabv3(in_channels=self.config.model.in_channels, out_channels=self.config.model.out_channels)
         else:
             raise NotImplementedError(
                 f"{self.config.model.name} model not yet supported!"

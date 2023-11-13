@@ -4,12 +4,12 @@ data:
     test_size: 0.05
     val_size: 0.15
     batch_size: 8
-    resize_dims: 64
+    resize_dims: 256
     enable_transforms: False
     num_workers: 0
     random_state: 2023
 model:
-    name: unet
+    name: deeplab # unet #deeplab
     unet_block : "cnn" # can be also "resnet"
     in_channels: 1
     out_channels: 3
