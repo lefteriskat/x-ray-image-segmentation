@@ -1,0 +1,8 @@
+name: env
+channels:
+  - defaults
+dependencies:
+  - pip
+  - python==3.11.0
+  - pip:
+    - -r requirements.txt
