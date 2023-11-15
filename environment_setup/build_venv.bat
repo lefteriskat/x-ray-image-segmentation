@@ -1,4 +1,22 @@
 @echo off
+
+REM Prompt user for Python version installation
+set /p install_python=Do you want to install Python 3.12.0? (y/n): 
+
+IF /I "%install_python%" EQU "y" (
+    REM Install pyenv
+    curl https://pyenv.run | cmd
+    set PATH=%USERPROFILE%\.pyenv\bin;%PATH%
+    pyenv init --path | cmd
+    pyenv virtualenv-init - | cmd
+
+    REM Install Python 3.12.0
+    pyenv install 3.12.0
+    pyenv global 3.12.0
+) ELSE (
+    REM Use existing Python version
+)
+
 REM Remove existing virtual environment
 RMDIR /Q /S venv 2>nul
 
@@ -7,7 +25,7 @@ python -m pip install virtualenv==20.17.0
 IF %ERRORLEVEL% NEQ 0 GOTO HandleError1
 
 REM Create virtual environment
-virtualenv venv -p python3.11
+virtualenv venv -p python3.12
 
 REM Activate virtual environment
 CALL venv\Scripts\activate
