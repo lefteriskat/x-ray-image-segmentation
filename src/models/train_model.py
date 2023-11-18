@@ -2,10 +2,10 @@ import logging
 
 import hydra
 import torch
-from metrics import Metrics, Metrics2
+from src.models.metrics import Metrics, Metrics2
 from omegaconf import DictConfig
 from tqdm import tqdm
-from utils import Utils
+from src.models.utils import Utils
 
 from src.data.x_ray_dataset import XRayDatasetModule
 
@@ -151,13 +151,6 @@ def train_model(config: DictConfig):
         with torch.no_grad():
             pred_test = model(images_batch)
         
-        if counter == 1:
-            visual_image_batch = images_batch
-            visual_mask_batch = masks_batch
-            visual_preds = pred_test
-
-        counter = counter+1
-
         test_avg_loss += loss_func(pred_test, masks_batch) / len(test_loader)
 
         test_accuracy += Metrics2.get_accuracy(pred_test, masks_batch) / len(test_loader)
@@ -172,7 +165,7 @@ def train_model(config: DictConfig):
 
 
     # Visualization of the last image batch. We visualize the original data, the labels and our predictions #
-    utils.plot_predictions(visual_image_batch, visual_mask_batch, visual_preds)
+    utils.plot_predictions(images_batch, masks_batch, pred_test)
 
 if __name__ == "__main__":
     log_fmt = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"

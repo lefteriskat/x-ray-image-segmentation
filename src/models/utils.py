@@ -1,5 +1,6 @@
 import albumentations as A
 import hydra
+from matplotlib import pyplot as plt
 import torch
 from albumentations.pytorch import ToTensorV2
 from omegaconf import DictConfig, OmegaConf
@@ -101,3 +102,42 @@ class Utils:
 
     def get_loss_function(self):
         return nn.CrossEntropyLoss()
+
+    def plot_predictions(self, data_batch, label_batch, predictions):     
+        # Convert tensors to NumPy arrays
+        data_np = data_batch.cpu().numpy()
+        label_np = label_batch.cpu().numpy()
+        pred_np = predictions.cpu().numpy()
+
+        print(f"Data : {data_batch.size()}")
+        print(f"Label : {data_batch.size()}")
+        print(f"Pred : {data_batch.size()}")
+
+        batches_len = data_np.shape[0]
+        print(f"Batches length : {batches_len}")
+        pred_channels = predictions.shape[1]
+        print(f"Pred channels {pred_channels}")
+
+        fig, axs = plt.subplots(5, batches_len, figsize=(8, 10))
+
+        # Original Data Image
+        for i in range(batches_len):
+            axs[i].imshow(data_np[i, 0], cmap="gray")
+            axs[i].axis("off")
+            axs[i].set_title("Data")
+
+        # Original Label Image
+        for i in range(batches_len):
+            axs[i + batches_len].imshow(label_np[i, :, :], cmap="gray")
+            axs[i + batches_len].axis("off")
+            axs[i + batches_len].set_title("Label")
+
+        # Predicted Label Images
+        pred_channels = predictions.shape[1]
+        for i in range(batches_len):
+            for j in range(pred_channels):
+                axs[i + 2 * batches_len + j].imshow(pred_np[i, j], cmap="gray")
+                axs[i + 2 * batches_len + j].axis("off")
+                axs[i + 2 * batches_len + j].set_title(f"Predicted class {j}")
+
+        plt.show()
