@@ -165,7 +165,8 @@ def train_model(config: DictConfig):
 
 
     # Visualization of the last image batch. We visualize the original data, the labels and our predictions #
-    utils.plot_predictions(images_batch, masks_batch, pred_test)
+    pred_final = utils.transform_prediction(pred_test)
+    utils.plot_predictions(images_batch, masks_batch, pred_final)
 
 if __name__ == "__main__":
     log_fmt = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"

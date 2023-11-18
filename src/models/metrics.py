@@ -30,9 +30,6 @@ class Metrics2:
                 "iou": multiclass_jaccard_index(y_pred, mask, num_classes=3),
                 "dice": multiclass_f1_score(y_pred, mask, num_classes=3)}
         
-    
-
-
 class Metrics:
     """
     Class that stores functions that return different segmentation metrics"""

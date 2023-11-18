@@ -103,6 +103,14 @@ class Utils:
     def get_loss_function(self):
         return nn.CrossEntropyLoss()
 
+    def transform_prediction(self, pred):
+        # This function is used to transform the prediction tensor from (1,3, width, height) to (1, width, height). Also it refactors the pixels that were alterned in the x_ray_dataset.py
+        pred_softmax = torch.nn.functional.softmax(pred, dim=1)
+        pred_mask = torch.argmax(pred_softmax, dim=1)
+        pred_mask[pred_mask == 1] = 128
+        pred_mask[pred_mask == 2] = 255
+        return pred_mask.long()
+
     def plot_predictions(self, data_batch, label_batch, predictions):     
         # Convert tensors to NumPy arrays
         data_np = data_batch.cpu().numpy()
@@ -110,15 +118,12 @@ class Utils:
         pred_np = predictions.cpu().numpy()
 
         print(f"Data : {data_batch.size()}")
-        print(f"Label : {data_batch.size()}")
-        print(f"Pred : {data_batch.size()}")
+        print(f"Label : {label_batch.size()}")
+        print(f"Pred : {predictions.size()}")
 
         batches_len = data_np.shape[0]
-        print(f"Batches length : {batches_len}")
-        pred_channels = predictions.shape[1]
-        print(f"Pred channels {pred_channels}")
 
-        fig, axs = plt.subplots(5, batches_len, figsize=(8, 10))
+        fig, axs = plt.subplots(3, batches_len, figsize=(8, 10))
 
         # Original Data Image
         for i in range(batches_len):
@@ -133,11 +138,8 @@ class Utils:
             axs[i + batches_len].set_title("Label")
 
         # Predicted Label Images
-        pred_channels = predictions.shape[1]
         for i in range(batches_len):
-            for j in range(pred_channels):
-                axs[i + 2 * batches_len + j].imshow(pred_np[i, j], cmap="gray")
-                axs[i + 2 * batches_len + j].axis("off")
-                axs[i + 2 * batches_len + j].set_title(f"Predicted class {j}")
-
+            axs[i + 1 + batches_len].imshow(pred_np[i, :, :], cmap="gray")
+            axs[i + 1 + batches_len].axis("off")
+            axs[i + 1 + batches_len].set_title("Predicted")
         plt.show()
