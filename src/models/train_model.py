@@ -142,11 +142,21 @@ def train_model(config: DictConfig):
     test_specificity = 0.0
     test_iou = 0.0
     test_dice = 0.0
-    
+
+    counter = 0
+
     for images_batch, masks_batch in tqdm(test_loader, desc="Test"):
+
         images_batch, masks_batch = images_batch.to(device), masks_batch.to(device)
         with torch.no_grad():
             pred_test = model(images_batch)
+        
+        if counter == 1:
+            visual_image_batch = images_batch
+            visual_mask_batch = masks_batch
+            visual_preds = pred_test
+
+        counter = counter+1
 
         test_avg_loss += loss_func(pred_test, masks_batch) / len(test_loader)
 
@@ -160,8 +170,9 @@ def train_model(config: DictConfig):
     logger.info(f" - Test specificity: {test_specificity}")
     logger.info(f" - Test DICE: {test_dice}  - Test IoU: {test_iou}")
 
-    # utils.plot_predictions(images_batch, masks_batch, pred)
 
+    # Visualization of the last image batch. We visualize the original data, the labels and our predictions #
+    utils.plot_predictions(visual_image_batch, visual_mask_batch, visual_preds)
 
 if __name__ == "__main__":
     log_fmt = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
