@@ -5,7 +5,7 @@ data:
     val_size: 0.15
     batch_size: 8
     resize_dims: 64
-    enable_transforms: False
+    enable_transforms: True
     num_workers: 0
     random_state: 2023
 model:
@@ -16,5 +16,5 @@ model:
 training:
     optimizer: adam
     lr : 0.001
-    epochs: 5
+    epochs: 10
     seed : 69

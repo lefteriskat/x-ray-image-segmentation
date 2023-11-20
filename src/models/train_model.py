@@ -1,12 +1,14 @@
 import logging
+import os
 
 import hydra
 import torch
-from metrics import Metrics, Metrics2
-from omegaconf import DictConfig
+from metrics import Metrics2
+from omegaconf import DictConfig, OmegaConf
 from tqdm import tqdm
 from utils import Utils
 
+import wandb
 from src.data.x_ray_dataset import XRayDatasetModule
 
 logger = logging.getLogger(__name__)
@@ -17,6 +19,14 @@ def train_model(config: DictConfig):
     # helper class to load all training parameters
     # accoring to configuration file
     utils = Utils(config)
+
+    # wandb
+    wandb_key = os.getenv("WANDB_API_KEY")
+    wandb.login(key=wandb_key)
+    print(config)
+    run = wandb.init(
+        project="xray-segmentation-project-test", config=OmegaConf.to_container(config)
+    )
 
     torch.manual_seed(config.training.seed)
 
@@ -60,7 +70,7 @@ def train_model(config: DictConfig):
         train__specificity = 0.0
         train__iou = 0.0
         train_dice = 0.0
-        
+
         model.train()  # train mode
         tp, tn, fp, fn = [0] * 4
         for images_batch, masks_batch in tqdm(
@@ -80,9 +90,13 @@ def train_model(config: DictConfig):
 
             # calculate metrics to show the user
             train_avg_loss += loss.item() / len(train_loader)
-            
-            train_accuracy += Metrics2.get_accuracy(pred, masks_batch) / len(train_loader)
-            train__specificity += Metrics2.get_specificity(pred, masks_batch) / len(train_loader)
+
+            train_accuracy += Metrics2.get_accuracy(pred, masks_batch) / len(
+                train_loader
+            )
+            train__specificity += Metrics2.get_specificity(pred, masks_batch) / len(
+                train_loader
+            )
             train__iou += Metrics2.get_iou(pred, masks_batch) / len(train_loader)
             train_dice += Metrics2.get_dice_coef(pred, masks_batch) / len(train_loader)
 
@@ -91,7 +105,17 @@ def train_model(config: DictConfig):
         )
         logger.info(f" - Train specificity: {train__specificity}")
         logger.info(f" - Train DICE: {train_dice}  - Train IoU: {train__iou}")
-        
+
+        wandb.log(
+            {
+                "train_loss": train_avg_loss,
+                "train_accuracy": train_accuracy,
+                "train_specificity": train__specificity,
+                "train_dice": train_dice,
+                "train_iou": train__iou,
+            }
+        )
+
         ################################################################
         # Validation
         ################################################################
@@ -117,8 +141,12 @@ def train_model(config: DictConfig):
 
             validation_avg_loss += loss / len(val_loader)
 
-            val_accuracy += Metrics2.get_accuracy(val_pred, masks_batch) / len(val_loader)
-            val_specificity += Metrics2.get_specificity(val_pred, masks_batch) / len(val_loader)
+            val_accuracy += Metrics2.get_accuracy(val_pred, masks_batch) / len(
+                val_loader
+            )
+            val_specificity += Metrics2.get_specificity(val_pred, masks_batch) / len(
+                val_loader
+            )
             val_iou += Metrics2.get_iou(val_pred, masks_batch) / len(val_loader)
             val_dice += Metrics2.get_dice_coef(val_pred, masks_batch) / len(val_loader)
 
@@ -128,10 +156,19 @@ def train_model(config: DictConfig):
         logger.info(f" - Validation specificity: {val_specificity}")
         logger.info(f" - Validation DICE: {val_dice}  - Validation IoU: {val_iou}")
 
+        wandb.log(
+            {
+                "val_loss": validation_avg_loss,
+                "val_accuracy": val_accuracy,
+                "val_specificity": val_specificity,
+                "val_dice": val_dice,
+                "val_iou": val_iou,
+            }
+        )
+
         # Adjust lr
         # scheduler.step()
-        
-        
+
     ################################################################
     # Test
     ################################################################
@@ -142,7 +179,7 @@ def train_model(config: DictConfig):
     test_specificity = 0.0
     test_iou = 0.0
     test_dice = 0.0
-    
+
     for images_batch, masks_batch in tqdm(test_loader, desc="Test"):
         images_batch, masks_batch = images_batch.to(device), masks_batch.to(device)
         with torch.no_grad():
@@ -150,17 +187,21 @@ def train_model(config: DictConfig):
 
         test_avg_loss += loss_func(pred_test, masks_batch) / len(test_loader)
 
-        test_accuracy += Metrics2.get_accuracy(pred_test, masks_batch) / len(test_loader)
-        test_specificity += Metrics2.get_specificity(pred_test, masks_batch) / len(test_loader)
+        test_accuracy += Metrics2.get_accuracy(pred_test, masks_batch) / len(
+            test_loader
+        )
+        test_specificity += Metrics2.get_specificity(pred_test, masks_batch) / len(
+            test_loader
+        )
         test_iou += Metrics2.get_iou(pred_test, masks_batch) / len(test_loader)
         test_dice += Metrics2.get_dice_coef(pred_test, masks_batch) / len(test_loader)
-
 
     logger.info(f" - Test loss: {test_avg_loss}  - Test accuracy: {test_accuracy}")
     logger.info(f" - Test specificity: {test_specificity}")
     logger.info(f" - Test DICE: {test_dice}  - Test IoU: {test_iou}")
 
     # utils.plot_predictions(images_batch, masks_batch, pred)
+    run.finish()
 
 
 if __name__ == "__main__":

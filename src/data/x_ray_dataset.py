@@ -49,6 +49,7 @@ class XRayDataset(Dataset):
 
         return image_final, mask_final
 
+
 class XRayDatasetModule:
     def __init__(
         self,

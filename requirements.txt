@@ -27,3 +27,4 @@ ipykernel
 jupyterlab
 notebook
 tqdm
+wandb
