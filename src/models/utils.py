@@ -1,11 +1,14 @@
 import albumentations as A
 import hydra
+import matplotlib.pyplot as plt
 import torch
+import torch.nn.functional as F
 from albumentations.pytorch import ToTensorV2
+from matplotlib.gridspec import GridSpec
 from omegaconf import DictConfig, OmegaConf
-from torch import nn
+from torch import Tensor, nn
 
-from src.models.unet import UNetBlocked, DeepLabv3
+from src.models.unet import DeepLabv3, UNetBlocked
 
 
 class Utils:
@@ -25,12 +28,7 @@ class Utils:
                             min_max_height=(50, 101),
                             height=config.data.resize_dims,
                             width=config.data.resize_dims,
-                            p=0.25,
-                        ),
-                        A.PadIfNeeded(
-                            min_height=config.data.resize_dims,
-                            min_width=config.data.resize_dims,
-                            p=0.25,
+                            p=0.5,
                         ),
                     ],
                     p=1,
@@ -85,7 +83,10 @@ class Utils:
                 unet_block=self.config.model.unet_block,
             )
         elif self.config.model.name == "deeplab":
-            return DeepLabv3(in_channels=self.config.model.in_channels, out_channels=self.config.model.out_channels)
+            return DeepLabv3(
+                in_channels=self.config.model.in_channels,
+                out_channels=self.config.model.out_channels,
+            )
         else:
             raise NotImplementedError(
                 f"{self.config.model.name} model not yet supported!"
@@ -101,3 +102,61 @@ class Utils:
 
     def get_loss_function(self):
         return nn.CrossEntropyLoss()
+    
+    def create_models_name(self):
+        return f"{self.config.model.name}_{self.config.model.unet_block}_{self.config.training.optimizer}_{self.config.training.lr}_{self.config.data.resize_dims}_{self.config.training.epochs}"
+
+    def plot_predictions(
+        images: Tensor,
+        masks_true: Tensor,
+        y_pred: Tensor,
+        n_images: int = 4,
+        title: str = "predictions_plot",
+        segm_threshold: float = 0.5,
+    ) -> None:
+        y_hat = F.softmax(y_pred, dim=1)
+        images = images.cpu()
+        masks_true = masks_true.cpu()
+        y_hat = y_hat.cpu()
+        y_hat_ = torch.where(y_hat > segm_threshold, 1, 0)
+
+        # Define the number of rows and columns
+        num_rows = 3
+        num_cols = n_images
+
+        # Create a grid of subplots using GridSpec
+        fig = plt.figure()
+        grid = GridSpec(num_rows, num_cols + 1, figure=fig)
+
+        # Create axes for each subplot
+        axes = []
+        titles = ["Image", "Mask", "Prediction\n@0.5 threshold"]
+        for i in range(num_rows):
+            # Add title on the left side of the row
+            ax_title = fig.add_subplot(grid[i, 0])
+            ax_title.set_axis_off()
+            ax_title.text(0, 0.5, f"{titles[i]}", va="center")
+
+            # Add the main subplot for each column
+            row_axes = []
+            data = images.permute((0, 2, 3, 1))
+            cmap = None
+            if i == 1:
+                data = masks_true
+                cmap = "gray"
+            if i == 2:
+                data = y_hat_
+                cmap = "gray"
+
+            for j in range(num_cols):
+                ax = fig.add_subplot(grid[i, j + 1])
+                ax.imshow(data[j], cmap=cmap)
+                ax.set_axis_off()
+                row_axes.append(ax)
+            axes.append(row_axes)
+
+        # Adjust the layout and spacing of subplots
+        fig.tight_layout()
+
+        plt.savefig(f"{title}.png")
+        plt.show()
