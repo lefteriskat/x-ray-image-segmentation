@@ -48,14 +48,13 @@ class XRayDataset(Dataset):
         mask_final = mask_final.long()
 
         return image_final, mask_final
-    
+
+
 class XRayTestDataset(Dataset):
     def __init__(self, data_dir, transforms=None):
         self.data_path = data_dir
         # use glob to take the labels and the data
-        self.data_paths = sorted(
-            glob.glob(os.path.join(self.data_path + "/*.tif"))
-        )
+        self.data_paths = sorted(glob.glob(os.path.join(self.data_path + "/*.tif")))
 
     def __len__(self):
         return len(self.data_paths)
@@ -146,17 +145,16 @@ class XRayDatasetModule:
             val_fraction=self.config.data.val_size,
             test_fraction=self.config.data.test_size,
         )
-        
+
     def getTestDataLoader(self):
         test_data_dir = self.config.data.test_data_path
         test_dataset = XRayTestDataset(data_dir=test_data_dir)
-        
+
         test_loader = DataLoader(
             test_dataset,
             batch_size=self.config.data.batch_size,
             shuffle=True,
             num_workers=self.config.data.num_workers,
         )
-        
+
         return test_loader
-        

@@ -202,9 +202,12 @@ def train_model(config: DictConfig):
 
     # utils.plot_predictions(images_batch, masks_batch, pred)
     run.finish()
-    
+
     if config.model.save_model:
-        torch.save(model.state_dict(), os.path.join(config.model.save_path, utils.create_models_name()+".pth"))
+        torch.save(
+            model.state_dict(),
+            os.path.join(config.model.save_path, utils.create_models_name() + ".pth"),
+        )
 
 
 if __name__ == "__main__":
