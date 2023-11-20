@@ -102,6 +102,9 @@ class Utils:
 
     def get_loss_function(self):
         return nn.CrossEntropyLoss()
+    
+    def create_models_name(self):
+        return f"{self.config.model.name}_{self.config.model.unet_block}_{self.config.training.optimizer}_{self.config.training.lr}_{self.config.data.resize_dims}_{self.config.training.epochs}"
 
     def plot_predictions(
         images: Tensor,
