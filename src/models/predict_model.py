@@ -41,7 +41,7 @@ def predict_model(config: DictConfig):
             pred_test = model(images_batch)
             
         counter+=1
-        utils.plot_predictions(images_batch, pred_test, counter=counter)
+        utils.plot_predictions(images_batch, pred_test, counter=counter, model_name=utils.create_models_name())
 
 
 if __name__ == "__main__":

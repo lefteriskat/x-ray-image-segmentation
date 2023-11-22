@@ -7,7 +7,7 @@ from albumentations.pytorch import ToTensorV2
 from matplotlib.gridspec import GridSpec
 from omegaconf import DictConfig, OmegaConf
 from torch import Tensor, nn
-
+import os
 from src.models.unet import DeepLabv3, UNetBlocked
 
 
@@ -35,6 +35,7 @@ class Utils:
                 ),
                 A.VerticalFlip(p=0.5),
                 A.RandomRotate90(p=0.5),
+                A.GaussNoise(p=0.5),
                 A.OneOf(
                     [
                         A.ElasticTransform(
@@ -115,7 +116,7 @@ class Utils:
         pred_mask[pred_mask == 2] = 255
         return pred_mask.long()
 
-    def plot_predictions(self, data_batch, predictions, label_batch = None, counter=0):     
+    def plot_predictions(self, data_batch, predictions, label_batch = None, counter=0, model_name="dummy"):     
         # Convert tensors to NumPy arrays
         data_np = data_batch.cpu().numpy()
         predictions = self.transform_prediction(predictions)
@@ -154,5 +155,7 @@ class Utils:
                 axs[i + 1 + batches_len].set_title("Label")
 
        
-            
-        plt.savefig( f"reports/figures/predictions_{counter}.png")
+        dir_path = os.path.join("reports/figures/", model_name)
+        if not os.path.exists(dir_path):
+            os.makedirs(dir_path)
+        plt.savefig( dir_path + f"/{model_name}_predictions_{counter}.png")
