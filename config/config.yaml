@@ -4,9 +4,10 @@ data:
     train_size: 0.8
     test_size: 0.05
     val_size: 0.15
-    batch_size: 8
+    test_batch_size: 2
+    batch_size: 2
     resize_dims: 64
-    enable_transforms: True
+    enable_transforms: False
     num_workers: 0
     random_state: 2023
 model:
@@ -19,5 +20,5 @@ model:
 training:
     optimizer: adam
     lr : 0.001
-    epochs: 10
+    epochs: 3
     seed : 69

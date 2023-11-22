@@ -55,6 +55,7 @@ class XRayTestDataset(Dataset):
         self.data_path = data_dir
         # use glob to take the labels and the data
         self.data_paths = sorted(glob.glob(os.path.join(self.data_path + "/*.tif")))
+        self.transforms = transforms
 
     def __len__(self):
         return len(self.data_paths)
@@ -65,7 +66,11 @@ class XRayTestDataset(Dataset):
         image = Image.open(data_path)
 
         image_final = np.array(image)
-
+        
+        if self.transforms:
+            augmented = self.transforms(image=image_final)
+            image_final = augmented["image"]
+        
         return image_final
 
 
@@ -148,13 +153,13 @@ class XRayDatasetModule:
 
     def getTestDataLoader(self):
         test_data_dir = self.config.data.test_data_path
-        test_dataset = XRayTestDataset(data_dir=test_data_dir)
+        test_dataset = XRayTestDataset(data_dir=test_data_dir, transforms=self.test_transforms)
 
         test_loader = DataLoader(
             test_dataset,
-            batch_size=self.config.data.batch_size,
+            batch_size=self.config.data.test_batch_size,
             shuffle=True,
-            num_workers=self.config.data.num_workers,
+            num_workers=0,
         )
 
         return test_loader

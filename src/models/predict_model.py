@@ -26,20 +26,21 @@ def predict_model(config: DictConfig):
         out_channels=config.model.out_channels,
         unet_block=config.model.unet_block,
     )
-
-    path = os.path.join(
-        os.path.join(config.model.save_path, utils.create_models_name() + ".pth")
-    )
+    utils = Utils(config)
+    path = os.path.join(config.model.save_path, utils.create_models_name() + ".pth")
 
     model.load_state_dict(torch.load(path))
     model.eval()
 
-    dataloader = XRayDatasetModule(config).getTestDataLoader()
-
+    dataloader = XRayDatasetModule(config, test_transforms=utils.get_test_transforms()).getTestDataLoader()
+    counter = 0
     for images_batch in tqdm(dataloader, desc="Test"):
         images_batch = images_batch.to(device)
         with torch.no_grad():
             pred_test = model(images_batch)
+            
+        counter+=1
+        utils.plot_predictions(images_batch, pred_test, counter=counter)
 
 
 if __name__ == "__main__":

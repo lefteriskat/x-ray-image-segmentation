@@ -106,57 +106,53 @@ class Utils:
     def create_models_name(self):
         return f"{self.config.model.name}_{self.config.model.unet_block}_{self.config.training.optimizer}_{self.config.training.lr}_{self.config.data.resize_dims}_{self.config.training.epochs}"
 
-    def plot_predictions(
-        images: Tensor,
-        masks_true: Tensor,
-        y_pred: Tensor,
-        n_images: int = 4,
-        title: str = "predictions_plot",
-        segm_threshold: float = 0.5,
-    ) -> None:
-        y_hat = F.softmax(y_pred, dim=1)
-        images = images.cpu()
-        masks_true = masks_true.cpu()
-        y_hat = y_hat.cpu()
-        y_hat_ = torch.where(y_hat > segm_threshold, 1, 0)
+    def transform_prediction(self, pred):
+        # This function is used to transform the prediction tensor from (1,3, width, height) to (1, width, height). 
+        # Also it refactors the pixels that were alterned in the x_ray_dataset.py
+        pred_softmax = torch.nn.functional.softmax(pred, dim=1)
+        pred_mask = torch.argmax(pred_softmax, dim=1)
+        pred_mask[pred_mask == 1] = 128
+        pred_mask[pred_mask == 2] = 255
+        return pred_mask.long()
 
-        # Define the number of rows and columns
-        num_rows = 3
-        num_cols = n_images
+    def plot_predictions(self, data_batch, predictions, label_batch = None, counter=0):     
+        # Convert tensors to NumPy arrays
+        data_np = data_batch.cpu().numpy()
+        predictions = self.transform_prediction(predictions)
+        pred_np = predictions.cpu().numpy()
 
-        # Create a grid of subplots using GridSpec
-        fig = plt.figure()
-        grid = GridSpec(num_rows, num_cols + 1, figure=fig)
+        print(f"Data : {data_batch.size()}")
+        print(f"Pred : {predictions.size()}")
 
-        # Create axes for each subplot
-        axes = []
-        titles = ["Image", "Mask", "Prediction\n@0.5 threshold"]
-        for i in range(num_rows):
-            # Add title on the left side of the row
-            ax_title = fig.add_subplot(grid[i, 0])
-            ax_title.set_axis_off()
-            ax_title.text(0, 0.5, f"{titles[i]}", va="center")
+        if label_batch is not None:
+            label_np = label_batch.cpu().numpy()
+            print(f"Label : {label_batch.size()}")
 
-            # Add the main subplot for each column
-            row_axes = []
-            data = images.permute((0, 2, 3, 1))
-            cmap = None
-            if i == 1:
-                data = masks_true
-                cmap = "gray"
-            if i == 2:
-                data = y_hat_
-                cmap = "gray"
+        batches_len = data_np.shape[0]
+        
+        number_of_figures = 2 if label_batch is None else 3 
+        
+        fig, axs = plt.subplots(number_of_figures, batches_len, figsize=(8, 10))
+        axs = axs.flatten()
+        # Original Data Image
+        for i in range(batches_len):
+            axs[i].imshow(data_np[i, 0], cmap="gray")
+            axs[i].axis("off")
+            axs[i].set_title("Data")
+            
+        # Predicted Label Images
+        for i in range(batches_len):
+            axs[i + batches_len].imshow(pred_np[i, :, :], cmap="gray")
+            axs[i + batches_len].axis("off")
+            axs[i + batches_len].set_title("Predicted")
 
-            for j in range(num_cols):
-                ax = fig.add_subplot(grid[i, j + 1])
-                ax.imshow(data[j], cmap=cmap)
-                ax.set_axis_off()
-                row_axes.append(ax)
-            axes.append(row_axes)
+        # Original Label Image
+        if label_batch is not None:
+            for i in range(batches_len):
+                axs[i + 1 + batches_len].imshow(label_np[i, :, :], cmap="gray")
+                axs[i + 1 + batches_len].axis("off")
+                axs[i + 1 + batches_len].set_title("Label")
 
-        # Adjust the layout and spacing of subplots
-        fig.tight_layout()
-
-        plt.savefig(f"{title}.png")
-        plt.show()
+       
+            
+        plt.savefig( f"reports/figures/predictions_{counter}.png")
