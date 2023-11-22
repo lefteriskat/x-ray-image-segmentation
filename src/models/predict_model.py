@@ -30,6 +30,7 @@ def predict_model(config: DictConfig):
     path = os.path.join(config.model.save_path, utils.create_models_name() + ".pth")
 
     model.load_state_dict(torch.load(path))
+    model.to(device)
     model.eval()
 
     dataloader = XRayDatasetModule(config, test_transforms=utils.get_test_transforms()).getTestDataLoader()
