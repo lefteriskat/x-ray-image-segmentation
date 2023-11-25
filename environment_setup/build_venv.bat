@@ -1,41 +1,68 @@
-@echo off
+#!/bin/bash
 
-REM Prompt user for Python version installation
-set /p install_python=Do you want to install Python 3.12.0? (y/n): 
+# Prompt user for Python version installation
+read -p "Do you want to install Python 3.11.0? (y/n): " install_python
 
-IF /I "%install_python%" EQU "y" (
-    REM Install pyenv
-    curl https://pyenv.run | cmd
-    set PATH=%USERPROFILE%\.pyenv\bin;%PATH%
-    pyenv init --path | cmd
-    pyenv virtualenv-init - | cmd
+# Define the desired Python version
+PYTHON_VERSION="3.11.0"
 
-    REM Install Python 3.12.0
-    pyenv install 3.12.0
-    pyenv global 3.12.0
-) ELSE (
-    REM Use existing Python version
-)
+if [ "$install_python" = "y" ]; then
+    # Uninstall existing Python version
+    if command -v pyenv &> /dev/null; then
+        # Check if Python version is already installed
+        if pyenv versions --bare | grep -q "$PYTHON_VERSION"; then
+            echo "Uninstalling existing Python $PYTHON_VERSION..."
+            pyenv uninstall "$PYTHON_VERSION"
+        fi
+    fi
 
-REM Remove existing virtual environment
-RMDIR /Q /S venv 2>nul
+    # Install pyenv
+    curl https://pyenv.run | bash
+    export PATH="$HOME/.pyenv/bin:$PATH"
+    eval "$(pyenv init --path)"
+    eval "$(pyenv virtualenv-init -)"
 
-REM Get virtualenv
+    # Install Python 3.11.0
+    pyenv install "$PYTHON_VERSION"
+    pyenv global "$PYTHON_VERSION"
+else
+    # Use existing Python version
+fi
+
+# Remove existing virtual environment
+rm -rf venv
+
+# Get virtualenv
 python -m pip install virtualenv==20.17.0
-IF %ERRORLEVEL% NEQ 0 GOTO HandleError1
+if [ $? -ne 0 ]; then
+    # Handle virtualenv installation error
+    echo "An error occurred during the virtualenv installation. Running error handling code..."
+    # removing the certifications
+    python -m pip install virtualenv==20.17.0 --trusted-host pypi.org --trusted-host files.pythonhosted.org
+    echo "virtualenv installation error handling code executed."
+    exit 1
+fi
 
-REM Create virtual environment
-virtualenv venv -p python3.12
+# Create virtual environment
+virtualenv venv -p python3.11
 
-REM Activate virtual environment
-CALL venv\Scripts\activate
+# Activate virtual environment
+source venv/bin/activate
 
-REM Install requirements
+# Install requirements
 pip install -r requirements.txt
-IF %ERRORLEVEL% NEQ 0 GOTO HandleError2
+if [ $? -ne 0 ]; then
+    # Handle requirements installation error
+    echo "An error occurred during the requirements installation. Running error handling code..."
+    # removing the certifications
+    pip install -r requirements.txt --trusted-host pypi.org --trusted-host files.pythonhosted.org
+    echo "requirements installation error handling code executed."
+    exit 2
+fi
 
-REM If all steps succeeded, exit the script
-exit /b
+# If all steps succeeded, exit the script
+exit 0
+
 
 :HandleError1
 echo An error occurred during the virtualenv installation. Running error handling code...
