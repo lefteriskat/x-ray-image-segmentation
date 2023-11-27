@@ -5,21 +5,21 @@ data:
     test_size: 0.05
     val_size: 0.15
     test_batch_size: 2
-    batch_size: 2
+    batch_size: 32
     resize_dims: 64
     enable_transforms: False
     num_workers: 0
     random_state: 2023
 model:
-    name: deeplabsmp+ # unet #deeplab, deeplabsmp, deeplabsmp+
+    name: unet # unet #deeplab, deeplabsmp, deeplabsmp+, segformer
     unet_block : "cnn" # can be also "resnet"
     in_channels: 1
     out_channels: 3
     save_model: True
     save_path: models/
-    loss: focal # dice, focal, tversky, ce
+    loss: ce # dice, focal, tversky, ce
 training:
     optimizer: adam
-    lr : 0.0005 # 0.0005
-    epochs: 5
+    lr : 0.001 # 0.0005
+    epochs: 2
     seed : 69

@@ -8,7 +8,7 @@ from matplotlib.gridspec import GridSpec
 from omegaconf import DictConfig, OmegaConf
 from torch import Tensor, nn
 import os
-from src.models.unet import DeepLabv3, UNetBlocked, deeplabv3_smp, deeplabv3plus_smp
+from src.models.unet import DeepLabv3, UNetBlocked, deeplabv3_smp, deeplabv3plus_smp, Segformer
 from segmentation_models_pytorch.losses import DiceLoss, FocalLoss, TverskyLoss
 
 
@@ -93,6 +93,8 @@ class Utils:
             return deeplabv3_smp()
         elif self.config.model.name == "deeplabsmp+":
             return deeplabv3plus_smp()
+        elif self.config.model.name == "segformer":
+            return Segformer()
         else:
             raise NotImplementedError(
                 f"{self.config.model.name} model not yet supported!"

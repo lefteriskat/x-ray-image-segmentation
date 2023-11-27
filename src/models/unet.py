@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torchvision import models
 import segmentation_models_pytorch as smp
-
+from transformers import SegformerConfig, SegformerModel, SegformerForSemanticSegmentation
 
 class UNet(nn.Module):
     def __init__(self):
@@ -415,4 +415,42 @@ def deeplabv3plus_smp():
         encoder_weights=None, encoder_output_stride=16, 
         decoder_channels=256, decoder_atrous_rates=(12, 24, 36),
         in_channels=1, classes=3, activation='softmax', upsampling=4, aux_params=None) # logsoftmax
+    return model
+
+def Segformer2():
+    config = SegformerConfig.from_pretrained("nvidia/segformer-b0-finetuned-ade-512-512", num_channels=1)
+    #configuration = SegformerConfig(num_channels = 1, num_encoder_blocks = 4,depths = [2, 2, 2, 2], sr_ratios = [8, 4, 2, 1], hidden_sizes = [32, 64, 160, 256], patch_sizes = [7, 3, 3, 3], strides = [4, 2, 2, 2], num_attention_heads = [1, 2, 5, 8], mlp_ratios = [4, 4, 4, 4], hidden_act = 'gelu', hidden_dropout_prob = 0.0, attention_probs_dropout_prob = 0.0, classifier_dropout_prob = 0.1, initializer_range = 0.02, drop_path_rate = 0.1, layer_norm_eps = 1e-06, decoder_hidden_size = 256, semantic_loss_ignore_index = 255**kwargs )
+    
+    # Initializing a model from the nvidia/segformer-b0-finetuned-ade-512-512 style configuration
+    model = SegformerModel(config)
+    # Set the number of output channels/classes for segmentation
+    num_classes = 3  # Replace with the number of your segmentation classes
+
+    # Modify the classifier head of the model
+    model.classifier = torch.nn.Conv2d(model.config.hidden_sizes[-1], num_classes, kernel_size=(1, 1))
+    return model
+
+class CustomSegformer(nn.Module):
+    def __init__(self, num_classes, config):
+        super(CustomSegformer, self).__init__()
+        self.segformer = SegformerForSemanticSegmentation(config)
+        # Modify the classifier head to match the number of classes
+        self.segformer.classifier = nn.Conv2d(config.hidden_sizes[-1], num_classes, kernel_size=(1, 1))
+
+    def forward(self, x):
+        # Forward pass through the Segformer
+        outputs = self.segformer(x)
+        # Return only the logits
+        return outputs.logits
+
+def Segformer():
+    # Load the configuration for Segformer
+    config = SegformerConfig.from_pretrained("nvidia/segformer-b0-finetuned-ade-512-512", num_channels=1)
+    
+    # Number of classes for segmentation
+    num_classes = 3  # Replace with your specific number of classes
+
+    # Initialize the custom Segformer model
+    model = CustomSegformer(num_classes=num_classes, config=config)
+
     return model

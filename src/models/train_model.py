@@ -81,9 +81,10 @@ def train_model(config: DictConfig):
 
             # set parameter gradients to zero
             optimizer.zero_grad()
-
+            
             # forward
             pred = model(images_batch)
+            #print(f"Output size: {pred.size()}, Target size: {masks_batch.size()}")
             loss = loss_func(pred, masks_batch)  # forward-pass
             loss.backward()  # backward-pass
             optimizer.step()  # update weights
