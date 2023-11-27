@@ -33,6 +33,10 @@ Project Organization
 ------------
 
     ├── LICENSE
+    ├──environment_setup 
+        ├── build_venv.bat  <- Build environment for Windows users run from the root directory
+        ├── build_venv.sh   <- Build environment for Linux/MACOS users run from the root directory
+        ├── environment.yml <- Build environment for Anaconda users run from the root directory
     ├── Makefile           <- Makefile with commands like `make data` or `make train`
     ├── README.md          <- The top-level README for developers using this project.
     ├── data

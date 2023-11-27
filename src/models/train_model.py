@@ -3,6 +3,8 @@ import os
 
 import hydra
 import torch
+import torch.nn.functional as F
+
 from metrics import Metrics2
 from omegaconf import DictConfig, OmegaConf
 from tqdm import tqdm
@@ -84,9 +86,17 @@ def train_model(config: DictConfig):
 
             # forward
             pred = model(images_batch)
+
+            # Apply softmax to get probabilities
+            pred_probs = F.softmax(pred, dim=1)
+
             loss = loss_func(pred, masks_batch)  # forward-pass
             loss.backward()  # backward-pass
             optimizer.step()  # update weights
+
+            # Log probability of prediction per target class to WandB
+            prob_class_dict = {}
+            for i in range(pred_probs.shape[1]): prob_class_dict[f"train_pred_prob_class_{i}"] = pred_probs[:, i].mean().item()
 
             # calculate metrics to show the user
             train_avg_loss += loss.item() / len(train_loader)
@@ -113,6 +123,8 @@ def train_model(config: DictConfig):
                 "train_specificity": train__specificity,
                 "train_dice": train_dice,
                 "train_iou": train__iou,
+                "train_pred_prob_class": prob_class_dict
+
             }
         )
 
