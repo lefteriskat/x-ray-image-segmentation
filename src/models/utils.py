@@ -90,15 +90,9 @@ class Utils:
                 out_channels=self.config.model.out_channels,
             )
         elif self.config.model.name == "deeplabsmp":
-            return deeplabv3_smp(
-                in_channels=self.config.model.in_channels,
-                out_channels=self.config.model.out_channels,
-            )
+            return deeplabv3_smp()
         elif self.config.model.name == "deeplabsmp+":
-            return deeplabv3plus_smp(
-                in_channels=self.config.model.in_channels,
-                out_channels=self.config.model.out_channels,
-        )
+            return deeplabv3plus_smp()
         else:
             raise NotImplementedError(
                 f"{self.config.model.name} model not yet supported!"

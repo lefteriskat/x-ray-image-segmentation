@@ -414,5 +414,5 @@ def deeplabv3plus_smp():
         encoder_name='resnet34', encoder_depth=5,
         encoder_weights=None, encoder_output_stride=16, 
         decoder_channels=256, decoder_atrous_rates=(12, 24, 36),
-        in_channels=1, classes=3, activation=None, upsampling=4, aux_params=None)
+        in_channels=1, classes=3, activation='softmax', upsampling=4, aux_params=None) .
     return model
