@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torchvision import models
-from segmentation_models_pytorch import smp
+import segmentation_models_pytorch as smp
 
 
 class UNet(nn.Module):
