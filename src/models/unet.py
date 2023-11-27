@@ -311,9 +311,7 @@ class UNetBlocked(nn.Module):
         return x
 
 
-
-
-## Encoder-Decoder 
+## Encoder-Decoder
 # Encoder(Atrous Cnvoilutional Networks, ResNet-101) + Decoder(Atrous Spatial Pyramid Pooling)
 class ASPP0(nn.Module):
     def __init__(self, in_channels, out_channels):
@@ -321,13 +319,19 @@ class ASPP0(nn.Module):
         self.conv_1x1_1 = nn.Conv2d(in_channels, out_channels, kernel_size=1)
         self.bn_conv_1x1_1 = nn.BatchNorm2d(out_channels)
 
-        self.conv_3x3_1 = nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=1, padding=6, dilation=6)
+        self.conv_3x3_1 = nn.Conv2d(
+            in_channels, out_channels, kernel_size=3, stride=1, padding=6, dilation=6
+        )
         self.bn_conv_3x3_1 = nn.BatchNorm2d(out_channels)
 
-        self.conv_3x3_2 = nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=1, padding=12, dilation=12)
+        self.conv_3x3_2 = nn.Conv2d(
+            in_channels, out_channels, kernel_size=3, stride=1, padding=12, dilation=12
+        )
         self.bn_conv_3x3_2 = nn.BatchNorm2d(out_channels)
 
-        self.conv_3x3_3 = nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=1, padding=18, dilation=18)
+        self.conv_3x3_3 = nn.Conv2d(
+            in_channels, out_channels, kernel_size=3, stride=1, padding=18, dilation=18
+        )
         self.bn_conv_3x3_3 = nn.BatchNorm2d(out_channels)
 
         self.avg_pool = nn.AdaptiveAvgPool2d(1)
@@ -335,7 +339,9 @@ class ASPP0(nn.Module):
         self.conv_1x1_2 = nn.Conv2d(in_channels, out_channels, kernel_size=1)
         self.bn_conv_1x1_2 = nn.BatchNorm2d(out_channels)
 
-        self.conv_1x1_3 = nn.Conv2d(out_channels * 5, out_channels, kernel_size=1)  # (out_channels * 5) because we concatenate five different paths
+        self.conv_1x1_3 = nn.Conv2d(
+            out_channels * 5, out_channels, kernel_size=1
+        )  # (out_channels * 5) because we concatenate five different paths
         self.bn_conv_1x1_3 = nn.BatchNorm2d(out_channels)
 
     def forward(self, x):
@@ -346,7 +352,7 @@ class ASPP0(nn.Module):
 
         x5 = self.avg_pool(x)
         x5 = F.relu(self.bn_conv_1x1_2(self.conv_1x1_2(x5)))
-        x5 = F.interpolate(x5, size=x4.size()[2:], mode='bilinear', align_corners=False)
+        x5 = F.interpolate(x5, size=x4.size()[2:], mode="bilinear", align_corners=False)
 
         x = torch.cat((x1, x2, x3, x4, x5), dim=1)
 
@@ -461,6 +467,7 @@ class ASPP(nn.Module):
 
 
 
+
 class DeepLabv3(nn.Module):
     def __init__(self, in_channels, out_channels):
         super(DeepLabv3, self).__init__()
@@ -471,7 +478,9 @@ class DeepLabv3(nn.Module):
 
         # Replace the first convolution layer if the input channels are not equal to 3 (RGB)
         if in_channels != 3:
-            self.backbone[0] = nn.Conv2d(in_channels, 64, kernel_size=7, stride=2, padding=3, bias=False)
+            self.backbone[0] = nn.Conv2d(
+                in_channels, 64, kernel_size=7, stride=2, padding=3, bias=False
+            )
 
         # ASPP module
         if self.backbone == models.resnet50(pretrained=False) or self.backbone == models.resnet101(pretrained=False):
@@ -485,7 +494,7 @@ class DeepLabv3(nn.Module):
             nn.Conv2d(256, 256, kernel_size=3, padding=1, bias=False),
             nn.BatchNorm2d(256),
             nn.ReLU(),
-            nn.Conv2d(256, out_channels, kernel_size=1)
+            nn.Conv2d(256, out_channels, kernel_size=1),
         )
 
     def forward(self, x):

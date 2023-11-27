@@ -1,11 +1,14 @@
 import albumentations as A
 import hydra
+import matplotlib.pyplot as plt
 import torch
+import torch.nn.functional as F
 from albumentations.pytorch import ToTensorV2
+from matplotlib.gridspec import GridSpec
 from omegaconf import DictConfig, OmegaConf
-from torch import nn
-
-from src.models.unet import UNetBlocked, DeepLabv3
+from torch import Tensor, nn
+import os
+from src.models.unet import DeepLabv3, UNetBlocked
 
 
 class Utils:
@@ -25,18 +28,14 @@ class Utils:
                             min_max_height=(50, 101),
                             height=config.data.resize_dims,
                             width=config.data.resize_dims,
-                            p=0.25,
-                        ),
-                        A.PadIfNeeded(
-                            min_height=config.data.resize_dims,
-                            min_width=config.data.resize_dims,
-                            p=0.25,
+                            p=0.5,
                         ),
                     ],
                     p=1,
                 ),
                 A.VerticalFlip(p=0.5),
                 A.RandomRotate90(p=0.5),
+                A.GaussNoise(p=0.5),
                 A.OneOf(
                     [
                         A.ElasticTransform(
@@ -85,7 +84,10 @@ class Utils:
                 unet_block=self.config.model.unet_block,
             )
         elif self.config.model.name == "deeplab":
-            return DeepLabv3(in_channels=self.config.model.in_channels, out_channels=self.config.model.out_channels)
+            return DeepLabv3(
+                in_channels=self.config.model.in_channels,
+                out_channels=self.config.model.out_channels,
+            )
         else:
             raise NotImplementedError(
                 f"{self.config.model.name} model not yet supported!"
@@ -101,3 +103,59 @@ class Utils:
 
     def get_loss_function(self):
         return nn.CrossEntropyLoss()
+
+    def create_models_name(self):
+        return f"{self.config.model.name}_{self.config.model.unet_block}_{self.config.training.optimizer}_{self.config.training.lr}_{self.config.data.resize_dims}_{self.config.training.epochs}"
+
+    def transform_prediction(self, pred):
+        # This function is used to transform the prediction tensor from (1,3, width, height) to (1, width, height). 
+        # Also it refactors the pixels that were alterned in the x_ray_dataset.py
+        pred_softmax = torch.nn.functional.softmax(pred, dim=1)
+        pred_mask = torch.argmax(pred_softmax, dim=1)
+        pred_mask[pred_mask == 1] = 128
+        pred_mask[pred_mask == 2] = 255
+        return pred_mask.long()
+
+    def plot_predictions(self, data_batch, predictions, label_batch = None, counter=0, model_name="dummy"):     
+        # Convert tensors to NumPy arrays
+        data_np = data_batch.cpu().numpy()
+        predictions = self.transform_prediction(predictions)
+        pred_np = predictions.cpu().numpy()
+
+        print(f"Data : {data_batch.size()}")
+        print(f"Pred : {predictions.size()}")
+
+        if label_batch is not None:
+            label_np = label_batch.cpu().numpy()
+            print(f"Label : {label_batch.size()}")
+
+        batches_len = data_np.shape[0]
+        
+        number_of_figures = 2 if label_batch is None else 3 
+        
+        fig, axs = plt.subplots(number_of_figures, batches_len, figsize=(8, 10))
+        axs = axs.flatten()
+        # Original Data Image
+        for i in range(batches_len):
+            axs[i].imshow(data_np[i, 0], cmap="gray")
+            axs[i].axis("off")
+            axs[i].set_title("Data")
+            
+        # Predicted Label Images
+        for i in range(batches_len):
+            axs[i + batches_len].imshow(pred_np[i, :, :], cmap="gray")
+            axs[i + batches_len].axis("off")
+            axs[i + batches_len].set_title("Predicted")
+
+        # Original Label Image
+        if label_batch is not None:
+            for i in range(batches_len):
+                axs[i + 1 + batches_len].imshow(label_np[i, :, :], cmap="gray")
+                axs[i + 1 + batches_len].axis("off")
+                axs[i + 1 + batches_len].set_title("Label")
+
+       
+        dir_path = os.path.join("reports/figures/", model_name)
+        if not os.path.exists(dir_path):
+            os.makedirs(dir_path)
+        plt.savefig( dir_path + f"/{model_name}_predictions_{counter}.png")
