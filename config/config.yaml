@@ -11,15 +11,15 @@ data:
     num_workers: 0
     random_state: 2023
 model:
-    name: unet # unet #deeplab, deeplabsmp, deeplabsmp+
+    name: deeplabsmp+ # unet #deeplab, deeplabsmp, deeplabsmp+
     unet_block : "cnn" # can be also "resnet"
     in_channels: 1
     out_channels: 3
     save_model: True
     save_path: models/
-    loss: ce # dice, focal, tversky
+    loss: focal # dice, focal, tversky, ce
 training:
     optimizer: adam
-    lr : 0.001 # 0.0005
+    lr : 0.0005 # 0.0005
     epochs: 5
     seed : 69
