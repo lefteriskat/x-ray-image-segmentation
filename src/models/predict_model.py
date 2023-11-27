@@ -42,6 +42,7 @@ def predict_model(config: DictConfig):
             
         counter+=1
         utils.plot_predictions(images_batch, pred_test, counter=counter, model_name=utils.create_models_name())
+        utils.plot_probability_mask(images_batch, pred_test, counter=counter, model_name=utils.create_models_name())
 
 
 if __name__ == "__main__":

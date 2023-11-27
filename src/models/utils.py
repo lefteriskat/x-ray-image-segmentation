@@ -177,3 +177,49 @@ class Utils:
         if not os.path.exists(dir_path):
             os.makedirs(dir_path)
         plt.savefig( dir_path + f"/{model_name}_predictions_{counter}.png")
+        
+    
+    def plot_probability_mask(self, data_batch, predictions, label_batch = None, counter=0, model_name="dummy"):     
+        # Convert tensors to NumPy arrays
+        data_np = data_batch.cpu().numpy()
+        predictions = F.softmax(predictions, dim=1)
+        predictions = torch.max(predictions, dim=1).values
+        pred_np = predictions.cpu().numpy()
+
+        print(f"Data : {data_batch.size()}")
+        print(f"Pred : {predictions.size()}")
+
+        if label_batch is not None:
+            label_np = label_batch.cpu().numpy()
+            print(f"Label : {label_batch.size()}")
+
+        batches_len = data_np.shape[0]
+        
+        number_of_figures = 2 if label_batch is None else 3 
+        
+        fig, axs = plt.subplots(number_of_figures, batches_len, figsize=(8, 10))
+        axs = axs.flatten()
+        # Original Data Image
+        for i in range(batches_len):
+            axs[i].imshow(data_np[i, 0], cmap="gray")
+            axs[i].axis("off")
+            axs[i].set_title("Data")
+            
+        # Predicted Label Images
+        for i in range(batches_len):
+            axs[i + batches_len].imshow(pred_np[i, :, :], cmap="Blues")
+            axs[i + batches_len].axis("off")
+            axs[i + batches_len].set_title("Predicted")
+
+        # Original Label Image
+        if label_batch is not None:
+            for i in range(batches_len):
+                axs[i + 1 + batches_len].imshow(label_np[i, :, :], cmap="gray")
+                axs[i + 1 + batches_len].axis("off")
+                axs[i + 1 + batches_len].set_title("Label")
+
+       
+        dir_path = os.path.join("reports/figures/", model_name)
+        if not os.path.exists(dir_path):
+            os.makedirs(dir_path)
+        plt.savefig( dir_path + f"/{model_name}_probabilities_{counter}.png")
