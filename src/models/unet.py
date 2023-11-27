@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torchvision import models
+from segmentation_models_pytorch import smp
 
 
 class UNet(nn.Module):
@@ -318,56 +319,57 @@ class ASPP(nn.Module):
         self.conv_1x1_1 = nn.Conv2d(in_channels, out_channels, kernel_size=1)
         self.bn_conv_1x1_1 = nn.BatchNorm2d(out_channels)
 
-        self.conv_3x3_1 = nn.Conv2d(
-            in_channels, out_channels, kernel_size=3, stride=1, padding=6, dilation=6
-        )
+        # Existing dilated convolutions
+        self.conv_3x3_1 = nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=1, padding=6, dilation=6)
         self.bn_conv_3x3_1 = nn.BatchNorm2d(out_channels)
-
-        self.conv_3x3_2 = nn.Conv2d(
-            in_channels, out_channels, kernel_size=3, stride=1, padding=12, dilation=12
-        )
+        self.conv_3x3_2 = nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=1, padding=12, dilation=12)
         self.bn_conv_3x3_2 = nn.BatchNorm2d(out_channels)
-
-        self.conv_3x3_3 = nn.Conv2d(
-            in_channels, out_channels, kernel_size=3, stride=1, padding=18, dilation=18
-        )
+        self.conv_3x3_3 = nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=1, padding=18, dilation=18)
         self.bn_conv_3x3_3 = nn.BatchNorm2d(out_channels)
 
-        self.avg_pool = nn.AdaptiveAvgPool2d(1)
+        # Additional dilated convolutions
+        self.conv_3x3_4 = nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=1, padding=24, dilation=24)
+        self.bn_conv_3x3_4 = nn.BatchNorm2d(out_channels)
+        self.conv_3x3_5 = nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=1, padding=30, dilation=30)
+        self.bn_conv_3x3_5 = nn.BatchNorm2d(out_channels)
 
+        # Image-level features
+        self.avg_pool = nn.AdaptiveAvgPool2d(1)
         self.conv_1x1_2 = nn.Conv2d(in_channels, out_channels, kernel_size=1)
         self.bn_conv_1x1_2 = nn.BatchNorm2d(out_channels)
 
-        self.conv_1x1_3 = nn.Conv2d(
-            out_channels * 5, out_channels, kernel_size=1
-        )  # (out_channels * 5) because we concatenate five different paths
-        self.bn_conv_1x1_3 = nn.BatchNorm2d(out_channels)
+        # Final 1x1 convolution
+        self.conv_1x1_3 = nn.Conv2d(out_channels * 7, out_channels, kernel_size=1)  # Adjust the multiplier according to the number of concatenated feature maps
+        self.bn_conv_1x1_3 = nn.BatchNorm2d(out_channels)                         
 
     def forward(self, x):
         x1 = F.relu(self.bn_conv_1x1_1(self.conv_1x1_1(x)))
         x2 = F.relu(self.bn_conv_3x3_1(self.conv_3x3_1(x)))
         x3 = F.relu(self.bn_conv_3x3_2(self.conv_3x3_2(x)))
         x4 = F.relu(self.bn_conv_3x3_3(self.conv_3x3_3(x)))
+        x5 = F.relu(self.bn_conv_3x3_4(self.conv_3x3_4(x)))
+        x6 = F.relu(self.bn_conv_3x3_5(self.conv_3x3_5(x)))
 
-        x5 = self.avg_pool(x)
-        x5 = F.relu(self.bn_conv_1x1_2(self.conv_1x1_2(x5)))
-        x5 = F.interpolate(x5, size=x4.size()[2:], mode="bilinear", align_corners=False)
+        x7 = self.avg_pool(x)
+        x7 = F.relu(self.bn_conv_1x1_2(self.conv_1x1_2(x7)))
+        x7 = F.interpolate(x7, size=x4.size()[2:], mode='bilinear', align_corners=False)
 
-        x = torch.cat((x1, x2, x3, x4, x5), dim=1)
+        x = torch.cat((x1, x2, x3, x4, x5, x6, x7), dim=1)
 
         x = F.relu(self.bn_conv_1x1_3(self.conv_1x1_3(x)))
 
         return x
 
 
+
+
+
 class DeepLabv3(nn.Module):
     def __init__(self, in_channels, out_channels):
         super(DeepLabv3, self).__init__()
         # Use a pre-trained ResNet model as the backbone for feature extraction
-        self.backbone = models.resnet101(pretrained=True)
-        self.backbone_layers = list(self.backbone.children())[
-            :-2
-        ]  # Remove the last two layers (average pooling and fully connected layers)
+        self.backbone = models.resnet34(pretrained=False) # resnet50
+        self.backbone_layers = list(self.backbone.children())[:-2]  # Remove the last two layers (average pooling and fully connected layers)
         self.backbone = nn.Sequential(*self.backbone_layers)
 
         # Replace the first convolution layer if the input channels are not equal to 3 (RGB)
@@ -377,10 +379,12 @@ class DeepLabv3(nn.Module):
             )
 
         # ASPP module
-        self.aspp = ASPP(
-            2048, 256
-        )  # 2048 is the number of channels in the output of ResNet-101
-
+        if self.backbone == models.resnet50(pretrained=False) or self.backbone == models.resnet101(pretrained=False):
+            self.aspp = ASPP(2048, 256)  # 2048 is the number of channels in the output of ResNet-101, Resnet-50
+        else:
+            self.aspp = ASPP(512, 256) # For resnet34
+        
+        
         # Decoder
         self.decoder = nn.Sequential(
             nn.Conv2d(256, 256, kernel_size=3, padding=1, bias=False),
@@ -393,7 +397,22 @@ class DeepLabv3(nn.Module):
         x = self.backbone(x)
         x = self.aspp(x)
         x = self.decoder(x)
-        x = F.interpolate(
-            x, size=(256, 256), mode="bilinear", align_corners=False
-        )  # Replace input_image_height and input_image_width with the desired output size
+        x = F.interpolate(x, size=(256, 256), mode='bilinear', align_corners=False)  # Replace input_image_height and input_image_width with the desired output size
         return x
+    
+    
+def deeplabv3_smp():
+    model = smp.DeepLabV3(
+        encoder_name='resnet34', encoder_depth=5,
+        encoder_weights=None, encoder_output_stride=16, 
+        decoder_channels=256, decoder_atrous_rates=(12, 24, 36),
+        in_channels=1, classes=3, activation=None, upsampling=4, aux_params=None)
+    return model
+
+def deeplabv3plus_smp():
+    model = smp.DeepLabV3Plus(
+        encoder_name='resnet34', encoder_depth=5,
+        encoder_weights=None, encoder_output_stride=16, 
+        decoder_channels=256, decoder_atrous_rates=(12, 24, 36),
+        in_channels=1, classes=3, activation=None, upsampling=4, aux_params=None)
+    return model
