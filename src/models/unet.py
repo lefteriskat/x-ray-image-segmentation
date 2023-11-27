@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torchvision import models
+import segmentation_models_pytorch as smp
 
 
 class UNet(nn.Module):
@@ -314,7 +315,7 @@ class UNetBlocked(nn.Module):
 
 ## Encoder-Decoder 
 # Encoder(Atrous Cnvoilutional Networks, ResNet-101) + Decoder(Atrous Spatial Pyramid Pooling)
-class ASPP(nn.Module):
+class ASPP0(nn.Module):
     def __init__(self, in_channels, out_channels):
         super(ASPP, self).__init__()
         self.conv_1x1_1 = nn.Conv2d(in_channels, out_channels, kernel_size=1)
@@ -352,12 +353,119 @@ class ASPP(nn.Module):
         x = F.relu(self.bn_conv_1x1_3(self.conv_1x1_3(x)))
 
         return x
+## not working    
+#class ASPP2(nn.Module):
+#    def __init__(self, in_channels, out_channels, rates=[6, 12, 18, 24]):
+#        super(ASPP, self).__init__()
+#        self.convs = nn.ModuleList()
+#        self.bns = nn.ModuleList()
+#
+#        # 1x1 convolution
+#        self.convs.append(nn.Conv2d(in_channels, out_channels, kernel_size=1))
+#        self.bns.append(nn.BatchNorm2d(out_channels))
+#
+#        # Convolutions at different dilation rates
+#        for rate in rates:
+#            self.convs.append(nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=1, padding=rate, dilation=rate))
+#            self.bns.append(nn.BatchNorm2d(out_channels))
+#
+#        # Image-level features
+#        self.avg_pool = nn.AdaptiveAvgPool2d(1)
+#        self.convs.append(nn.Conv2d(in_channels, out_channels, kernel_size=1))
+#        self.bns.append(nn.BatchNorm2d(out_channels))
+#
+#        # Calculate the correct number of input channels for the final 1x1 convolution
+#        self.final_in_channels = out_channels * (len(rates) + 2)
+#
+#        # Final 1x1 convolution
+#        self.conv_1x1_output = nn.Conv2d(self.final_in_channels, out_channels, kernel_size=1)
+#        self.bn_output = nn.BatchNorm2d(out_channels)
+#
+#    def forward(self, x):
+#        res = []
+#
+#        # Apply all convolutions and batch norms
+#        for i, (conv, bn) in enumerate(zip(self.convs, self.bns)):
+#            conv_result = conv(x)
+#            bn_result = bn(conv_result)
+#            res.append(F.relu(bn_result))
+#            print(f"Conv {i}: {conv_result.shape}")
+#
+#        # Global average pooling
+#        image_features = self.avg_pool(x)
+#        image_features = F.relu(self.bns[-1](self.convs[-1](image_features)))
+#        image_features = F.interpolate(image_features, size=x.size()[2:], mode='bilinear', align_corners=False)
+#        res.append(image_features)
+#        print(f"Image features: {image_features.shape}")
+#        print(f"Number of feature maps before concatenation: {len(res)}")  # Check the number of feature maps
+#        
+#        # Concatenate along the channel dimension
+#        x = torch.cat(res, dim=1)
+#        print(f"After concatenation: {x.shape}")
+#
+#        # Final 1x1 conv
+#        x = self.conv_1x1_output(x)
+#        x = self.bn_output(x)
+#        x = F.relu(x)
+#
+#        return x
+
+
+class ASPP(nn.Module):
+    def __init__(self, in_channels, out_channels):
+        super(ASPP, self).__init__()
+        self.conv_1x1_1 = nn.Conv2d(in_channels, out_channels, kernel_size=1)
+        self.bn_conv_1x1_1 = nn.BatchNorm2d(out_channels)
+
+        # Existing dilated convolutions
+        self.conv_3x3_1 = nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=1, padding=6, dilation=6)
+        self.bn_conv_3x3_1 = nn.BatchNorm2d(out_channels)
+        self.conv_3x3_2 = nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=1, padding=12, dilation=12)
+        self.bn_conv_3x3_2 = nn.BatchNorm2d(out_channels)
+        self.conv_3x3_3 = nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=1, padding=18, dilation=18)
+        self.bn_conv_3x3_3 = nn.BatchNorm2d(out_channels)
+
+        # Additional dilated convolutions
+        self.conv_3x3_4 = nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=1, padding=24, dilation=24)
+        self.bn_conv_3x3_4 = nn.BatchNorm2d(out_channels)
+        self.conv_3x3_5 = nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=1, padding=30, dilation=30)
+        self.bn_conv_3x3_5 = nn.BatchNorm2d(out_channels)
+
+        # Image-level features
+        self.avg_pool = nn.AdaptiveAvgPool2d(1)
+        self.conv_1x1_2 = nn.Conv2d(in_channels, out_channels, kernel_size=1)
+        self.bn_conv_1x1_2 = nn.BatchNorm2d(out_channels)
+
+        # Final 1x1 convolution
+        self.conv_1x1_3 = nn.Conv2d(out_channels * 7, out_channels, kernel_size=1)  # Adjust the multiplier according to the number of concatenated feature maps
+        self.bn_conv_1x1_3 = nn.BatchNorm2d(out_channels)                         
+
+    def forward(self, x):
+        x1 = F.relu(self.bn_conv_1x1_1(self.conv_1x1_1(x)))
+        x2 = F.relu(self.bn_conv_3x3_1(self.conv_3x3_1(x)))
+        x3 = F.relu(self.bn_conv_3x3_2(self.conv_3x3_2(x)))
+        x4 = F.relu(self.bn_conv_3x3_3(self.conv_3x3_3(x)))
+        x5 = F.relu(self.bn_conv_3x3_4(self.conv_3x3_4(x)))
+        x6 = F.relu(self.bn_conv_3x3_5(self.conv_3x3_5(x)))
+
+        x7 = self.avg_pool(x)
+        x7 = F.relu(self.bn_conv_1x1_2(self.conv_1x1_2(x7)))
+        x7 = F.interpolate(x7, size=x4.size()[2:], mode='bilinear', align_corners=False)
+
+        x = torch.cat((x1, x2, x3, x4, x5, x6, x7), dim=1)
+
+        x = F.relu(self.bn_conv_1x1_3(self.conv_1x1_3(x)))
+
+        return x
+
+
+
 
 class DeepLabv3(nn.Module):
     def __init__(self, in_channels, out_channels):
         super(DeepLabv3, self).__init__()
         # Use a pre-trained ResNet model as the backbone for feature extraction
-        self.backbone = models.resnet101(pretrained=True)
+        self.backbone = models.resnet34(pretrained=False) # resnet50
         self.backbone_layers = list(self.backbone.children())[:-2]  # Remove the last two layers (average pooling and fully connected layers)
         self.backbone = nn.Sequential(*self.backbone_layers)
 
@@ -366,8 +474,12 @@ class DeepLabv3(nn.Module):
             self.backbone[0] = nn.Conv2d(in_channels, 64, kernel_size=7, stride=2, padding=3, bias=False)
 
         # ASPP module
-        self.aspp = ASPP(2048, 256)  # 2048 is the number of channels in the output of ResNet-101
-
+        if self.backbone == models.resnet50(pretrained=False) or self.backbone == models.resnet101(pretrained=False):
+            self.aspp = ASPP(2048, 256)  # 2048 is the number of channels in the output of ResNet-101, Resnet-50
+        else:
+            self.aspp = ASPP(512, 256) # For resnet34
+        
+        
         # Decoder
         self.decoder = nn.Sequential(
             nn.Conv2d(256, 256, kernel_size=3, padding=1, bias=False),
@@ -382,3 +494,20 @@ class DeepLabv3(nn.Module):
         x = self.decoder(x)
         x = F.interpolate(x, size=(256, 256), mode='bilinear', align_corners=False)  # Replace input_image_height and input_image_width with the desired output size
         return x
+    
+    
+def deeplabv3_smp():
+    model = smp.DeepLabV3(
+        encoder_name='resnet34', encoder_depth=5,
+        encoder_weights=None, encoder_output_stride=16, 
+        decoder_channels=256, decoder_atrous_rates=(12, 24, 36),
+        in_channels=1, classes=3, activation=None, upsampling=4, aux_params=None)
+    return model
+
+def deeplabv3plus_smp():
+    model = smp.DeepLabV3Plus(
+        encoder_name='resnet34', encoder_depth=5,
+        encoder_weights=None, encoder_output_stride=16, 
+        decoder_channels=256, decoder_atrous_rates=(12, 24, 36),
+        in_channels=1, classes=3, activation=None, upsampling=4, aux_params=None)
+    return model
