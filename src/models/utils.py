@@ -8,7 +8,8 @@ from matplotlib.gridspec import GridSpec
 from omegaconf import DictConfig, OmegaConf
 from torch import Tensor, nn
 import os
-from src.models.unet import DeepLabv3, UNetBlocked
+from src.models.unet import DeepLabv3, UNetBlocked, deeplabv3_smp, deeplabv3plus_smp
+from segmentation_models_pytorch.losses import DiceLoss, FocalLoss, TverskyLoss
 
 
 class Utils:
@@ -88,6 +89,16 @@ class Utils:
                 in_channels=self.config.model.in_channels,
                 out_channels=self.config.model.out_channels,
             )
+        elif self.config.model.name == "deeplabsmp":
+            return deeplabv3_smp(
+                in_channels=self.config.model.in_channels,
+                out_channels=self.config.model.out_channels,
+            )
+        elif self.config.model.name == "deeplabsmp+":
+            return deeplabv3plus_smp(
+                in_channels=self.config.model.in_channels,
+                out_channels=self.config.model.out_channels,
+        )
         else:
             raise NotImplementedError(
                 f"{self.config.model.name} model not yet supported!"
@@ -102,7 +113,14 @@ class Utils:
             )
 
     def get_loss_function(self):
-        return nn.CrossEntropyLoss()
+        if self.config.model.loss == "ce+":
+            return nn.CrossEntropyLoss()         #DiceLoss(‘multiclass’), FocalLoss(‘multiclass’), TverskyLoss(‘multiclass’)
+        elif self.config.model.loss == "dice":
+            return DiceLoss('multiclass')
+        elif self.config.model.loss == "focal":
+            return FocalLoss('multiclass')
+        else: 
+            return TverskyLoss('multiclass')
 
     def create_models_name(self):
         return f"{self.config.model.name}_{self.config.model.unet_block}_{self.config.training.optimizer}_{self.config.training.lr}_{self.config.data.resize_dims}_{self.config.training.epochs}"

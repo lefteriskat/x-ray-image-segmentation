@@ -17,6 +17,7 @@ model:
     out_channels: 3
     save_model: True
     save_path: models/
+    loss: ce # dice, focal, tversky
 training:
     optimizer: adam
     lr : 0.001
