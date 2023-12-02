@@ -26,7 +26,7 @@ class Utils:
                             p=0.5,
                         ),
                         A.RandomSizedCrop(
-                            min_max_height=(50, 101),
+                            min_max_height=(50, 250),
                             height=config.data.resize_dims,
                             width=config.data.resize_dims,
                             p=0.5,
@@ -36,21 +36,21 @@ class Utils:
                 ),
                 A.VerticalFlip(p=0.5),
                 A.RandomRotate90(p=0.5),
-                A.GaussNoise(p=0.5),
-                A.OneOf(
-                    [
-                        A.ElasticTransform(
-                            alpha=120, sigma=120 * 0.05, alpha_affine=120 * 0.03, p=0.5
-                        ),
-                        A.GridDistortion(p=0.5),
-                        A.OpticalDistortion(distort_limit=2, shift_limit=0.5, p=1),
-                    ],
-                    p=0.5,
-                ),
+                # A.GaussNoise(p=0.5),
+                # A.OneOf(
+                #     [
+                #         A.ElasticTransform(
+                #             alpha=120, sigma=120 * 0.05, alpha_affine=120 * 0.03, p=0.5
+                #         ),
+                #         A.GridDistortion(p=0.5),
+                #         A.OpticalDistortion(distort_limit=2, shift_limit=0.5, p=1),
+                #     ],
+                #     p=0.5,
+                # ),
                 # A.CLAHE(p=0.8),
-                A.RandomBrightnessContrast(p=0.6),
-                A.augmentations.transforms.ColorJitter(p=0.6),
-                A.RandomGamma(p=0.8),
+                # A.RandomBrightnessContrast(p=0.6),
+                # A.augmentations.transforms.ColorJitter(p=0.6),
+                # A.RandomGamma(p=0.8),
                 ToTensorV2(),
             ]
         )

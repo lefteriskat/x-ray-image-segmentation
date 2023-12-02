@@ -25,4 +25,4 @@ training:
     epochs: 50
     seed : 69
 wandb:
-    project: x_ray_sufficient_data_no_augmentations
+    project: x_ray_sufficient_data_with_augmentations
