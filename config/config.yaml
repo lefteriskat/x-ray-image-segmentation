@@ -2,17 +2,18 @@ data:
     data_path: data/raw/training_dataset/
     test_data_path: data/raw/lis_dataset/
     train_size: 0.8
+    train_absolute_size: 400
     test_size: 0.05
     val_size: 0.15
     test_batch_size: 2
-    batch_size: 2
-    resize_dims: 64
-    enable_transforms: False
-    num_workers: 0
+    batch_size: 64
+    resize_dims: 256
+    enable_transforms: True
+    num_workers: 32
     random_state: 2023
 model:
     name: unet # unet #deeplab
-    unet_block : "cnn" # can be also "resnet"
+    unet_block : "resnet" # can be also "resnet"
     in_channels: 1
     out_channels: 3
     save_model: True
@@ -20,6 +21,8 @@ model:
     loss: ce # dice, focal, tversky
 training:
     optimizer: adam
-    lr : 0.001
-    epochs: 3
+    lr : 0.0005
+    epochs: 50
     seed : 69
+wandb:
+    project: x_ray_sufficient_data_no_augmentations

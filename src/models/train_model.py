@@ -25,7 +25,7 @@ def train_model(config: DictConfig):
     wandb.login(key=wandb_key)
     print(config)
     run = wandb.init(
-        project="xray-segmentation-project-test", config=OmegaConf.to_container(config)
+        project=config.wandb.project, config=OmegaConf.to_container(config)
     )
 
     torch.manual_seed(config.training.seed)

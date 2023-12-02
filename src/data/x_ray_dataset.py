@@ -110,7 +110,7 @@ class XRayDatasetModule:
         test_size = int(np.floor(len(train_dataset) * test_fraction))
 
         train_dataset = torch.utils.data.Subset(
-            train_dataset, indices[: -(val_size + test_size)]
+            train_dataset, indices[: min(len(train_dataset)-(val_size + test_size), self.config.data.train_absolute_size)]
         )
         val_dataset = torch.utils.data.Subset(val_dataset, indices[-val_size:])
         test_dataset = torch.utils.data.Subset(
