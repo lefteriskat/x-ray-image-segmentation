@@ -199,6 +199,16 @@ def train_model(config: DictConfig):
     logger.info(f" - Test loss: {test_avg_loss}  - Test accuracy: {test_accuracy}")
     logger.info(f" - Test specificity: {test_specificity}")
     logger.info(f" - Test DICE: {test_dice}  - Test IoU: {test_iou}")
+    
+    wandb.log(
+            {
+                "test_loss": validation_avg_loss,
+                "test_accuracy": val_accuracy,
+                "test_specificity": val_specificity,
+                "test_dice": val_dice,
+                "test_iou": val_iou,
+            }
+    )
 
     # utils.plot_predictions(images_batch, masks_batch, pred)
     run.finish()
