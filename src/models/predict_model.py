@@ -35,14 +35,16 @@ def predict_model(config: DictConfig):
 
     _, _, dataloader = XRayDatasetModule(config, test_transforms=utils.get_test_transforms()).getDataLoaders()
     counter = 0
-    for images_batch in tqdm(dataloader, desc="Test"):
+    for images_batch, masks_batch in tqdm(dataloader, desc="Test"):
         images_batch = images_batch.to(device)
         with torch.no_grad():
             pred_test = model(images_batch)
             
+        masks_batch.to(device)
+            
         counter+=1
-        utils.plot_predictions(images_batch, pred_test, counter=counter, model_name=utils.create_models_name())
-        utils.plot_probability_mask(images_batch, pred_test, counter=counter, model_name=utils.create_models_name())
+        utils.plot_predictions(images_batch, pred_test, masks_batch, counter=counter, model_name=utils.create_models_name())
+        utils.plot_probability_mask(images_batch, pred_test, masks_batch, counter=counter, model_name=utils.create_models_name())
 
 
 if __name__ == "__main__":
