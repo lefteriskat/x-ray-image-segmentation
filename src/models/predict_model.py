@@ -33,7 +33,7 @@ def predict_model(config: DictConfig):
     model.to(device)
     model.eval()
 
-    dataloader = XRayDatasetModule(config, test_transforms=utils.get_test_transforms()).getTestDataLoader()
+    _, _, dataloader = XRayDatasetModule(config, test_transforms=utils.get_test_transforms()).getDataLoaders()
     counter = 0
     for images_batch in tqdm(dataloader, desc="Test"):
         images_batch = images_batch.to(device)
